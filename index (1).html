@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Voice Transformer — Parteesh Kumar</title>
+<meta name="description" content="Speak a sentence. ElevenLabs transforms your voice in real time. Built by Parteesh Kumar — SE Candidate, ElevenLabs ANZ.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600&family=Syne:wght@700;800&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#06060F;--surface:#0C0C1A;--lift:#121222;--border:#1C1C30;
+  --accent:#6366F1;--a2:#818CF8;--green:#10B981;--amber:#F59E0B;--red:#EF4444;
+  --text:#E2E2EE;--muted:#5A5A8A;--dim:#1A1A2E;
+  --mono:'JetBrains Mono',monospace;--disp:'Syne',sans-serif;
+}
+html,body{min-height:100%;background:var(--bg);color:var(--text);font-family:var(--mono);font-size:14px;line-height:1.6}
+body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse 70% 50% at 50% -5%,rgba(99,102,241,0.09),transparent 55%);pointer-events:none;z-index:0}
+
+/* ── Layout ── */
+.page{min-height:100vh;display:flex;flex-direction:column;position:relative;z-index:1}
+.wrap{max-width:720px;margin:0 auto;padding:0 1.5rem;width:100%}
+
+/* ── Header ── */
+.hdr{padding:1.2rem 0;border-bottom:1px solid var(--border)}
+.hdr-inner{display:flex;align-items:center;justify-content:space-between;gap:1rem}
+.hdr-left{display:flex;align-items:center;gap:0.7rem}
+.hdr-dot{width:7px;height:7px;border-radius:50%;background:var(--accent);box-shadow:0 0 6px var(--accent);animation:pulse 2s infinite;flex-shrink:0}
+.hdr-name{font-family:var(--disp);font-size:0.95rem;font-weight:700;color:var(--text)}
+.hdr-sub{font-size:0.6rem;color:var(--muted);letter-spacing:0.1em;text-transform:uppercase;margin-top:2px}
+.hdr-badge{font-size:0.6rem;color:var(--green);border:1px solid rgba(16,185,129,0.3);padding:0.25rem 0.65rem;border-radius:2px;letter-spacing:0.08em;text-transform:uppercase;white-space:nowrap}
+
+/* ── Hero ── */
+.hero{padding:4rem 0 2.5rem;text-align:center}
+.hero-tag{font-size:0.65rem;letter-spacing:0.2em;text-transform:uppercase;color:var(--muted);margin-bottom:1rem}
+.hero-title{font-family:var(--disp);font-size:clamp(2rem,6vw,3.2rem);font-weight:800;line-height:1.1;color:var(--text);margin-bottom:1rem}
+.hero-title span{color:var(--accent)}
+.hero-sub{font-size:0.85rem;color:var(--muted);line-height:1.8;max-width:480px;margin:0 auto}
+.hero-sub b{color:var(--a2);font-weight:500}
+
+/* ── Section label ── */
+.sec-label{font-size:0.6rem;font-weight:600;letter-spacing:0.18em;text-transform:uppercase;color:var(--muted);display:flex;align-items:center;gap:0.6rem;margin-bottom:1rem}
+.sec-label::before{content:'';width:3px;height:3px;border-radius:50%;background:var(--accent);display:inline-block;flex-shrink:0}
+
+/* ── Voice grid ── */
+.section{padding:2rem 0;border-top:1px solid var(--border)}
+.voice-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:8px}
+.voice-card{background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:0.75rem 1rem;cursor:pointer;transition:all 0.15s;text-align:left}
+.voice-card:hover{border-color:var(--accent);background:var(--lift)}
+.voice-card.active{border:1.5px solid var(--accent);background:rgba(99,102,241,0.08)}
+.vc-name{font-size:0.8rem;font-weight:600;color:var(--text);margin-bottom:2px}
+.vc-desc{font-size:0.65rem;color:var(--muted)}
+.voice-card.active .vc-name{color:var(--a2)}
+
+/* ── Examples ── */
+.ex-list{display:flex;flex-direction:column;gap:6px}
+.ex-btn{background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:0.6rem 0.9rem;font-size:0.75rem;color:var(--muted);cursor:pointer;font-family:var(--mono);transition:all 0.15s;text-align:left;line-height:1.5;width:100%}
+.ex-btn:hover{border-color:var(--accent);color:var(--text)}
+
+/* ── Mic area ── */
+.mic-area{display:flex;flex-direction:column;align-items:center;gap:1rem;padding:2.5rem 0}
+.mic-outer{position:relative;width:88px;height:88px;display:flex;align-items:center;justify-content:center}
+.mic-ring{position:absolute;inset:0;border-radius:50%;border:1.5px solid transparent;transition:all 0.3s}
+.mic-ring2{position:absolute;inset:-8px;border-radius:50%;border:1px solid transparent;transition:all 0.3s}
+.mic-btn{width:76px;height:76px;border-radius:50%;border:2px solid var(--border);background:var(--surface);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:1.8rem;transition:all 0.25s;outline:none;position:relative;z-index:1}
+.mic-btn:hover{border-color:var(--accent);background:rgba(99,102,241,0.08)}
+.mic-btn.recording{border-color:var(--red);background:rgba(239,68,68,0.08);animation:recglow 1.2s infinite}
+.mic-btn.playing{border-color:var(--green);background:rgba(16,185,129,0.08)}
+.mic-btn.processing{opacity:0.5;cursor:default}
+.mic-ring.recording{border-color:rgba(239,68,68,0.35);animation:rout 1.2s infinite}
+.mic-ring2.recording{border-color:rgba(239,68,68,0.15);animation:rout2 1.2s infinite}
+.mic-ring.playing{border-color:rgba(16,185,129,0.35);animation:rout 1s infinite}
+
+.wave{display:flex;gap:3px;align-items:center;height:28px}
+.wb{width:3px;border-radius:2px;background:var(--muted);height:4px;transition:height 0.08s,background 0.2s}
+.wb.rec{background:var(--red)}
+.wb.play{background:var(--green)}
+
+.mic-label{font-size:0.7rem;color:var(--muted);letter-spacing:0.06em;text-align:center;min-height:1.2rem;transition:color 0.2s}
+.mic-label.rec{color:var(--red)}
+.mic-label.play{color:var(--green)}
+.mic-label.proc{color:var(--a2)}
+
+/* ── Stats ── */
+.stats-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:1.5rem}
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:0.9rem 1rem}
+.stat-lbl{font-size:0.6rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);margin-bottom:0.3rem}
+.stat-val{font-size:1.1rem;font-weight:600;color:var(--text)}
+
+/* ── Log ── */
+.log-box{background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:0.7rem 0.9rem;max-height:100px;overflow-y:auto;font-size:0.65rem;color:var(--muted);line-height:2}
+.ll{animation:fin 0.15s ease forwards}
+.lg{color:var(--green)}.lr{color:var(--red)}.li{color:var(--a2)}
+
+/* ── Footer ── */
+.footer{margin-top:auto;padding:2rem 0;border-top:1px solid var(--border)}
+.footer-inner{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:0.5rem}
+.ft-l{font-size:0.65rem;color:var(--dim);letter-spacing:0.06em}
+.ft-r{font-size:0.65rem;color:var(--muted)}
+.ft-r span{color:var(--a2)}
+
+/* Animations */
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.3}}
+@keyframes recglow{0%,100%{box-shadow:0 0 0 0 rgba(239,68,68,0)}50%{box-shadow:0 0 0 14px rgba(239,68,68,0.1)}}
+@keyframes rout{0%{transform:scale(1);opacity:0.6}100%{transform:scale(1.3);opacity:0}}
+@keyframes rout2{0%{transform:scale(1);opacity:0.3}100%{transform:scale(1.45);opacity:0}}
+@keyframes fin{from{opacity:0}to{opacity:1}}
+
+@media(max-width:480px){
+  .stats-grid{grid-template-columns:1fr 1fr}
+  .voice-grid{grid-template-columns:1fr 1fr}
+  .hdr-badge{display:none}
+}
+</style>
+</head>
+<body>
+<div class="page">
+
+<header class="hdr">
+  <div class="wrap">
+    <div class="hdr-inner">
+      <div class="hdr-left">
+        <div class="hdr-dot"></div>
+        <div>
+          <div class="hdr-name">Voice Transformer</div>
+          <div class="hdr-sub">by Parteesh Kumar · SE Candidate · ElevenLabs ANZ</div>
+        </div>
+      </div>
+      <div class="hdr-badge">⬤ ElevenLabs Connected</div>
+    </div>
+  </div>
+</header>
+
+<main>
+  <div class="wrap">
+
+    <div class="hero">
+      <div class="hero-tag">Enterprise Solutions Engineer · ElevenLabs ANZ</div>
+      <h1 class="hero-title">Speak.<br><span>Hear it transform.</span></h1>
+      <p class="hero-sub">Pick a voice, tap the mic, say anything. <b>ElevenLabs</b> transforms it in real time and plays it back. This is what I sell — and this is how I demo it.</p>
+    </div>
+
+    <section class="section">
+      <div class="sec-label">Choose a voice</div>
+      <div class="voice-grid" id="voiceGrid"></div>
+    </section>
+
+    <section class="section">
+      <div class="sec-label">Or use an example phrase</div>
+      <div class="ex-list">
+        <button class="ex-btn" onclick="useExample(this)">Invoice approved for $45,000 — allocating to treasury now</button>
+        <button class="ex-btn" onclick="useExample(this)">Broker commission of $540 calculated and queued for next cycle</button>
+        <button class="ex-btn" onclick="useExample(this)">Execution complete — no human intervention required</button>
+        <button class="ex-btn" onclick="useExample(this)">Welcome to ElevenLabs. This is what your customers will hear.</button>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="sec-label">Speak your own instruction</div>
+      <div class="mic-area">
+        <div class="mic-outer" id="micOuter">
+          <div class="mic-ring" id="micRing"></div>
+          <div class="mic-ring2" id="micRing2"></div>
+          <button class="mic-btn" id="micBtn" onclick="toggleMic()">🎙</button>
+        </div>
+        <div class="wave" id="waveEl">
+          <div class="wb" id="w0"></div><div class="wb" id="w1"></div>
+          <div class="wb" id="w2"></div><div class="wb" id="w3"></div>
+          <div class="wb" id="w4"></div><div class="wb" id="w5"></div>
+          <div class="wb" id="w6"></div>
+        </div>
+        <div class="mic-label" id="micLabel">Tap to speak</div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="sec-label">Output</div>
+      <div class="stats-grid">
+        <div class="stat-card"><div class="stat-lbl">Voice</div><div class="stat-val" id="sVoice">—</div></div>
+        <div class="stat-card"><div class="stat-lbl">Latency</div><div class="stat-val" id="sLatency">—</div></div>
+        <div class="stat-card"><div class="stat-lbl">Model</div><div class="stat-val" id="sModel">—</div></div>
+      </div>
+      <div class="sec-label">Execution log</div>
+      <div class="log-box" id="logEl"></div>
+    </section>
+
+  </div>
+</main>
+
+<footer class="footer">
+  <div class="wrap">
+    <div class="footer-inner">
+      <span class="ft-l">Speak → ElevenLabs → Transform → Play · Real time · No server</span>
+      <span class="ft-r">Built by <span>Parteesh Kumar</span> · parteeshkumar.github.io</span>
+    </div>
+  </div>
+</footer>
+
+</div>
+
+<script>
+const EL_KEY = 'sk_54742c88618d6640f9db7bbd712efcd5e61f9d33018e4cce';
+
+const VOICES = [
+  {id:'EXAVITQu4vr4xnSDxMaL', name:'Sarah',    desc:'Calm · Professional'},
+  {id:'TX3LPaxmHKxFdv7VOQHJ', name:'Liam',     desc:'Conversational'},
+  {id:'pFZP5JQG7iQjIQuC4Bku', name:'Lily',     desc:'Warm · Expressive'},
+  {id:'onwK4e9ZLuTAKqWW03F9', name:'Daniel',   desc:'Deep · Authoritative'},
+  {id:'XB0fDUnXU5powFXDhCwa', name:'Charlotte',desc:'Clear · Precise'},
+  {id:'iP95p4xoKVk53GoZ742B', name:'Chris',    desc:'Confident · Direct'},
+];
+
+let selectedVoice = VOICES[0];
+let isRecording = false;
+let recognition = null;
+let waveIv = null;
+let pendingText = '';
+
+function buildVoices(){
+  const grid = document.getElementById('voiceGrid');
+  VOICES.forEach((v,i) => {
+    const el = document.createElement('div');
+    el.className = 'voice-card' + (i===0?' active':'');
+    el.innerHTML = `<div class="vc-name">${v.name}</div><div class="vc-desc">${v.desc}</div>`;
+    el.onclick = () => {
+      document.querySelectorAll('.voice-card').forEach(c=>c.classList.remove('active'));
+      el.classList.add('active');
+      selectedVoice = v;
+      document.getElementById('sVoice').textContent = v.name;
+      log('Voice selected: '+v.name);
+    };
+    grid.appendChild(el);
+  });
+}
+
+function log(msg, cls=''){
+  const box = document.getElementById('logEl');
+  const d = document.createElement('div');
+  d.className = 'll'+(cls?' '+cls:'');
+  d.textContent = `[${new Date().toLocaleTimeString('en-AU',{hour12:false})}] ${msg}`;
+  box.appendChild(d); box.scrollTop = box.scrollHeight;
+}
+
+function setMicState(s){
+  const btn = document.getElementById('micBtn');
+  const lbl = document.getElementById('micLabel');
+  const ring = document.getElementById('micRing');
+  const ring2 = document.getElementById('micRing2');
+  const bars = document.querySelectorAll('.wb');
+  btn.className = 'mic-btn ' + s;
+  ring.className = 'mic-ring ' + s;
+  ring2.className = 'mic-ring2 ' + s;
+  bars.forEach(b => { b.classList.remove('rec','play'); if(s==='recording') b.classList.add('rec'); if(s==='playing') b.classList.add('play'); });
+  if(s==='recording'){ lbl.textContent='Recording — tap to stop'; lbl.className='mic-label rec'; }
+  else if(s==='playing'){ lbl.textContent='Playing back via ElevenLabs...'; lbl.className='mic-label play'; }
+  else if(s==='processing'){ lbl.textContent='Synthesising...'; lbl.className='mic-label proc'; }
+  else { lbl.textContent='Tap to speak'; lbl.className='mic-label'; }
+}
+
+function startWave(){
+  const ids=['w0','w1','w2','w3','w4','w5','w6'];
+  waveIv = setInterval(()=>ids.forEach(id=>{
+    const el=document.getElementById(id); if(el) el.style.height=(4+Math.random()*18)+'px';
+  }),100);
+}
+function stopWave(){
+  clearInterval(waveIv);
+  ['w0','w1','w2','w3','w4','w5','w6'].forEach(id=>{
+    const el=document.getElementById(id); if(el) el.style.height='4px';
+  });
+}
+
+function useExample(el){
+  const text = el.textContent.trim();
+  log('Example: "'+text.substring(0,45)+'..."');
+  synthesise(text);
+}
+
+function toggleMic(){
+  if(isRecording){ recognition && recognition.stop(); isRecording=false; return; }
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if(!SR){ log('Mic not supported in this browser — use Chrome','lr'); return; }
+  if(!recognition){
+    recognition = new SR();
+    recognition.continuous=false; recognition.interimResults=false; recognition.lang='en-AU';
+    recognition.onresult = e => { pendingText = e.results[0][0].transcript; log('Heard: "'+pendingText.substring(0,50)+'"','li'); };
+    recognition.onend = () => { stopWave(); isRecording=false; if(pendingText){ synthesise(pendingText); pendingText=''; } else setMicState('idle'); };
+    recognition.onerror = e => { stopWave(); isRecording=false; setMicState('idle'); log('Mic error: '+e.error,'lr'); };
+  }
+  recognition.start(); isRecording=true;
+  setMicState('recording'); startWave();
+  log('Recording...');
+}
+
+async function synthesise(text){
+  setMicState('processing');
+  document.getElementById('sVoice').textContent = selectedVoice.name;
+  document.getElementById('sModel').textContent = 'mono-v1';
+  document.getElementById('sLatency').textContent = '...';
+  log('Sending to ElevenLabs · voice: '+selectedVoice.name+'...');
+  const t0 = performance.now();
+  try{
+    const res = await fetch('https://black-field-2281.kumarparteesh7.workers.dev',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({voiceId: selectedVoice.id, text})
+    });
+    if(!res.ok) throw new Error('ElevenLabs '+res.status);
+    const ms = Math.round(performance.now()-t0);
+    document.getElementById('sLatency').textContent = ms+'ms';
+    log('Audio received in '+ms+'ms · playing','lg');
+    const audio = new Audio(URL.createObjectURL(await res.blob()));
+    setMicState('playing'); startWave();
+    audio.onended = () => { stopWave(); setMicState('idle'); log('Playback complete','lg'); };
+    audio.onerror = () => { stopWave(); setMicState('idle'); log('Playback error','lr'); };
+    audio.play();
+  } catch(e){
+    stopWave(); setMicState('idle'); log('Error: '+e.message,'lr');
+  }
+}
+
+buildVoices();
+document.getElementById('sVoice').textContent = VOICES[0].name;
+log('Ready · '+VOICES.length+' voices · ElevenLabs connected');
+</script>
+</body>
+</html>
